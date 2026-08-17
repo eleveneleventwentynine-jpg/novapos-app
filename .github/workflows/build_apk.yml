@@ -1,0 +1,36 @@
+name: Build APK
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+
+      # This repo ships only the `lib/` UI skeleton. If the android/
+      # platform folder isn't present yet, generate it here so CI
+      # can still produce an APK without you committing it locally.
+      - name: Ensure platform folders exist
+        run: |
+          if [ ! -d "android" ]; then
+            flutter create --platforms=android --org com.novapos .
+          fi
+
+      - run: flutter pub get
+
+      - name: Build debug APK
+        run: flutter build apk --debug
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: novapos-debug-apk
+          path: build/app/outputs/flutter-apk/app-debug.apk
